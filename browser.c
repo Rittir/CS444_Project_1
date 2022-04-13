@@ -80,7 +80,18 @@ void read_user_input(char message[]) {
 void load_cookie() {
     // TODO: For Part 1.2, write your file operation code here.
     // Hint: The file path of the cookie is stored in COOKIE_PATH.
-    session_id = -1; // You may move this line to anywhere inside this fucntion.
+    FILE *infile;
+    infile = fopen (COOKIE_PATH, "r");
+    if (infile == NULL)
+    {
+        session_id = -1; // You may move this line to anywhere inside this fucntion.
+        return;
+    }
+    // read file contents till end of file
+    fread(&session_id, sizeof(session_id), 1, infile);
+    // close file
+    fclose (infile); 
+    return;
 }
 
 /**
@@ -89,6 +100,10 @@ void load_cookie() {
 void save_cookie() {
     // TODO: For Part 1.2, write your file operation code here.
     // Hint: The file path of the cookie is stored in COOKIE_PATH.
+    FILE *outfile;
+    outfile = fopen (COOKIE_PATH, "w+");
+    fwrite (&session_id, sizeof(session_id), 1, outfile);
+    fclose(outfile);
 }
 
 /**
@@ -110,7 +125,7 @@ void server_listener() {
     // TODO: For Part 2.3, uncomment the loop code that was commented out
     //  when you are done with multithreading.
 
-    // while (browser_on) {
+    while (browser_on) {
 
     char message[BUFFER_LEN];
     receive_message(server_socket_fd, message);
@@ -119,7 +134,7 @@ void server_listener() {
 
     puts(message);
 
-    //}
+    }
 }
 
 /**
@@ -160,6 +175,9 @@ void start_browser(const char host_ip[], int port) {
     save_cookie();
 
     // Main loop to read in the user's input and send it out.
+    pthread_t tid;
+    pthread_create(&tid, NULL, (void *)server_listener, NULL);
+
     while (browser_on) {
         char message[BUFFER_LEN];
         read_user_input(message);
@@ -168,10 +186,8 @@ void start_browser(const char host_ip[], int port) {
         // Starts the listener thread.
         // TODO: For Part 2.3, move server_listener() out of the loop and
         //  creat a thread to run it.
-        // Hint: Should we place server_listener() before or after the loop?
-        server_listener();
+        // Hint: Should we place server_listener() before or after the loop?      
     }
-
     // Closes the socket.
     close(server_socket_fd);
     printf("Closed the connection to %s:%d.\n", host_ip, port);

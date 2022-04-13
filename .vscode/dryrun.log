@@ -1,0 +1,6 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/rittir/operating_systems/Project_1'
+gcc -std=c11 server.c net_util.c -o server -pthread
+gcc -std=c11 browser.c net_util.c -o browser -pthread
+make: Leaving directory '/home/rittir/operating_systems/Project_1'
+ 
