@@ -423,7 +423,7 @@ void start_server(int port) {
     }
     printf("The server is now listening on port %d.\n", port);
 
-    pthread_t browser_threads[100];
+    pthread_t browser_threads[NUM_BROWSER];
     int i = 0;
     // Main loop to accept new browsers and creates handlers for them.
     while (true) {
@@ -441,10 +441,10 @@ void start_server(int port) {
         // TODO: For Part 2.1, creat a thread to run browser_handler() here.
         pthread_create(&browser_threads[i++], NULL, browser_handler, browser_socket_fd);
 
-        if (i >= 128) {
+        if (i >= NUM_BROWSER) {
             i = 0;
  
-            while (i < 128) {
+            while (i < NUM_BROWSER) {
                 pthread_join(browser_threads[i++], NULL);
             }
 

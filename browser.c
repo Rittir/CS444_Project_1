@@ -188,6 +188,7 @@ void start_browser(const char host_ip[], int port) {
         //  creat a thread to run it.
         // Hint: Should we place server_listener() before or after the loop?      
     }
+    pthread_join(tid, NULL);
     // Closes the socket.
     close(server_socket_fd);
     printf("Closed the connection to %s:%d.\n", host_ip, port);
