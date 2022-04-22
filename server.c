@@ -157,6 +157,70 @@ bool process_message(int session_id, const char message[]) {
     // TODO: For Part 3.1, write code to determine if the input is invalid and return false if it is.
     // Hint: Also need to check if the given variable does exist (i.e., it has been assigned with some value)
     // for the first variable and the second variable, respectively.
+    
+    
+    char errorData[BUFFER_LEN];
+	strcpy(errorData, message);
+    //first
+    token = strtok(errorData, " ");
+    symbol = token[0];
+    if(!isalpha(symbol) || token == NULL){
+        return false;
+    }
+
+    //validate =
+    token = strtok(NULL, " ");
+	if(token == NULL){
+		return false;
+	}else{
+        symbol = token[0];
+        if(symbol != '='){
+            return false;
+        }
+	}
+
+    //first
+    token = strtok(NULL, " ");
+	if(token == NULL){
+		return false;
+	}else{
+        if( !isalpha(token[0]) && !is_str_numeric(token)){
+            return false;
+        }
+	}
+
+    //more?
+	token = strtok(NULL, " ");
+	
+
+	if(token != NULL) {
+
+        //operator
+        symbol = token[0];
+		if(token == NULL){
+			return false;
+        }else{
+        	if(symbol != '+' && symbol != '-' && symbol != '*' && symbol != '/'){
+                return false;
+            }
+		}
+
+        //second
+        token = strtok(NULL, " ");
+		if(token == NULL){
+			return false;
+		}else{
+        	if(!isalpha(token[0]) && !is_str_numeric(token)){
+                return false;
+            }
+		}
+
+        //more?
+        token = strtok(NULL, " ");
+        if(token != NULL){
+       	    return false;
+        }
+	}
 
     // Makes a copy of the string since strtok() will modify the string that it is processing.
     char data[BUFFER_LEN];
@@ -304,10 +368,13 @@ int register_browser(int browser_socket_fd) {
     //  code around the critical sections identified.
 
     for (int i = 0; i < NUM_BROWSER; ++i) {
+        
         if (!browser_list[i].in_use) {
+            pthread_mutex_lock(&browser_list_mutex);
             browser_id = i;
             browser_list[browser_id].in_use = true;
             browser_list[browser_id].socket_fd = browser_socket_fd;
+            pthread_mutex_unlock(&browser_list_mutex);
             break;
         }
     }
@@ -319,12 +386,15 @@ int register_browser(int browser_socket_fd) {
     if (session_id == -1) {
         for (int i = 0; i < NUM_SESSIONS; ++i) {
             if (!session_list[i].in_use) {
+                pthread_mutex_lock(&session_list_mutex);
                 session_id = i;
                 session_list[session_id].in_use = true;
+                pthread_mutex_unlock(&session_list_mutex);
                 break;
             }
         }
     }
+
     browser_list[browser_id].session_id = session_id;
 
     sprintf(message, "%d", session_id);
@@ -343,13 +413,11 @@ int register_browser(int browser_socket_fd) {
 void browser_handler(int browser_socket_fd) {
     int browser_id;
 
-    pthread_mutex_lock(&browser_list_mutex);
 
     browser_id = register_browser(browser_socket_fd);
     int socket_fd = browser_list[browser_id].socket_fd;
     int session_id = browser_list[browser_id].session_id;
 
-    pthread_mutex_unlock(&browser_list_mutex);
     printf("Successfully accepted Browser #%d for Session #%d.\n", browser_id, session_id);
 
     while (true) {
@@ -376,14 +444,14 @@ void browser_handler(int browser_socket_fd) {
         bool data_valid = process_message(session_id, message);
         if (!data_valid) {
             // TODO: For Part 3.1, add code here to send the error message to the browser.
+            send_message(socket_fd, "ERROR: Check input");
+		    continue;
             continue;
         }
 
-        pthread_mutex_lock(&session_list_mutex);
         session_to_str(session_id, response);
         broadcast(session_id, response);
         save_session(session_id);
-        pthread_mutex_unlock(&session_list_mutex);
     }
 }
 
@@ -425,7 +493,7 @@ void start_server(int port) {
 
     pthread_t browser_threads[NUM_BROWSER];
     int i = 0;
-    // Main loop to accept new browsers and creates handlers for them.
+    // Main loop to accept new browsers and creates handlers for them
     while (true) {
         struct sockaddr_in browser_address;
         socklen_t browser_address_len = sizeof(browser_address);
